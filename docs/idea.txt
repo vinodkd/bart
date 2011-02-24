@@ -1,0 +1,9 @@
+one script that takes
+    * the name of an executable , 
+    * a function that returns a list of input params
+    * an output dir
+the script runs each dir and filespec combo, and presents the output errorlevel, and asks if this is the expected outcome
+if yes or no, it stores the result for future use
+
+on future runs, it checks if the output for that combination has already been recorded and verifies that the output is as expected,and prints out a pass/fail message
+
