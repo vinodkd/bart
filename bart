@@ -12,6 +12,8 @@ function main()
     getinputs
 
 		for inp in ${INPUTS[*]}; do
+			setup
+			
 			OUTCOME=
       echo Running: $executable $inp
 			$executable $inp
@@ -25,6 +27,8 @@ function main()
 			# outcome is set by either check_for_expected or ask_and_add_result
 			print_outcome $executable $inp $ret $OUTCOME
       store_for_summary $executable $inp $ret $OUTCOME
+			
+			teardown
     done
     print_summary $executable
 }
