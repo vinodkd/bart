@@ -7,3 +7,4 @@ if yes or no, it stores the result for future use
 
 on future runs, it checks if the output for that combination has already been recorded and verifies that the output is as expected,and prints out a pass/fail message
 
+run specific steps can be called in the setup() and teardown() functions.

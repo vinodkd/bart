@@ -61,6 +61,7 @@ How to use bart for your own testing
 - download the bart script, and copy it to the directory where your app is, or where you want the expected_results.tsv to be stored.
   - note that bart will append to any existing tsv file, so you might want to copy bart to separate folders for each app to be tested
 - create an inputs file that creates an array of inputs that you want bart to send to the executable to be tested
+- optionally add a setup() and/or teardown() function in the same file. thsee will be called once per iteration.
 - call bart with the executable as a param
 
 Next steps
