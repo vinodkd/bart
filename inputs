@@ -1,21 +1,4 @@
-function getinputs()
-{
-  INPUTS[0]="1 2"
-  INPUTS[1]="3 4"
-  INPUTS[2]="5 6"
-}
-
-function setup()
-{
-  #cannot have an empty function. replace with your own setup steps.
-  #if none, leave a single harmless command (like echo) in here.
-  echo "setup"
-}
-
-function teardown()
-{
-  #cannot have an empty function. replace with your own teardown steps.
-  #if none, leave a single harmless command (like echo) in here.
-  echo "teardown"
-}
-
+1 2
+3 4
+5 6
+7
