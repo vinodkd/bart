@@ -29,14 +29,23 @@ Here's a sample run to show the concept. The application under test is `sum.sh`,
       Running: ./sum.sh 1 2
       input:1 and 2
       3
+      
+      Ran command: "./sum.sh 1 2", which returned: 0. Is this the expected result (y/n)?
+      y
       execution of: "./sum.sh 1 2" returned: 0 and outcome: PASSED
       Running: ./sum.sh 3 4
       input:3 and 4
       7
+      
+      Ran command: "./sum.sh 3 4", which returned: 0. Is this the expected result (y/n)?
+      y
       execution of: "./sum.sh 3 4" returned: 0 and outcome: PASSED
       Running: ./sum.sh 5 6
       input:5 and 6
       11
+      
+      Ran command: "./sum.sh 5 6", which returned: 0. Is this the expected result (y/n)?
+      y
       execution of: "./sum.sh 5 6" returned: 0 and outcome: PASSED
       
       bart summary for runs of "./sum.sh" :
