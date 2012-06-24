@@ -5,8 +5,15 @@ function getinputs()
 
 function setup()
 {
+  #cannot have an empty function. replace with your own setup steps.
+  #if none, leave a single harmless command (like echo) in here.
+  echo "setup"
 }
 
 function teardown()
 {
+  #cannot have an empty function. replace with your own teardown steps.
+  #if none, leave a single harmless command (like echo) in here.
+  echo "teardown"
 }
+
