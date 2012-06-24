@@ -116,3 +116,4 @@ Next steps
 ==========
 - add a -y switch to bart to treat all prompt-able points as a yes answer automatically
 - add a -n switch to bart to treat all prompt-able points as a no answer automatically
+- allow comment lines in the input file
