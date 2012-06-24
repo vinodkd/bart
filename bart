@@ -1,15 +1,36 @@
-#!/usr/bin/sh
+#!/usr/bin/env bash
 
 # bart: the Bash-based Application Rapid Tester.
+# a simple test harness for command line apps
 
+set -u # defensive coding
+
+set -e # error out if inputs has syntax errors.
 source inputs
+set +e # turn error checking off so test runs' returns can be read
+
 
 function main()
 {
+		if ! getinputs; then
+			echo Error processing inputs. exiting
+			exit 1
+		fi
+
+		if [[ ${#INPUTS[*]} -le 0 ]]; then
+			echo no inputs found. exiting
+      exit 1
+		fi
+
+		if [[ $# -eq 0 ]]; then
+			echo "Usage: bart <executable or quoted command>"
+      exit 2
+		fi
+    
     local executable=$1
-    local outputdir=$2
-		
-    getinputs
+
+		bart_banner
+		echo ${INPUTS[*]}
 
 		for inp in ${INPUTS[*]}; do
 			setup
@@ -31,6 +52,19 @@ function main()
 			teardown
     done
     print_summary $executable
+    bart_credits
+}
+
+function bart_banner()
+{
+	echo -e "\033[1;31mba\033[1;32mrt\033[0m started." 
+
+}
+
+function bart_credits()
+{
+	echo -e "\033[1;31mba\033[1;32mrt\033[0m stopped." 
+
 }
 
 function check_for_expected()
@@ -65,6 +99,13 @@ function ask_and_add_result()
   local inp=$2
   local ret=$3
 
+	if [[ $ret -eq 127 ]]; then
+		echo "Ran command: \"$executable $inp\", which failed. Do you want to continue with the next run(c) or quit(q)?"
+	  read ans_proceed	# add -n1 to make it an instant response
+	  if [ $ans_proceed != "c" -o $ans_proceed != "C" ]; then
+			exit 3	# TODO: fix this to skip this iteration, not the whole process.
+		fi
+	fi
 	echo
   echo "Ran command: \"$executable $inp\", which returned: $ret. Is this the expected result (y/n)?"
   read answer	# add -n1 to make it an instant response
@@ -123,3 +164,4 @@ function print_summary()
   done
 }
 main $*
+
