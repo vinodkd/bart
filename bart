@@ -58,13 +58,11 @@ function main()
 function bart_banner()
 {
 	echo -e "\033[1;31mba\033[1;32mrt\033[0m started." 
-
 }
 
 function bart_credits()
 {
-	echo -e "\033[1;31mba\033[1;32mrt\033[0m stopped." 
-
+	echo -e "\033[1;31mba\033[1;32mrt\033[0m done." 
 }
 
 function check_for_expected()
@@ -85,7 +83,7 @@ function check_for_expected()
   fi
   
   EXPECTED_RET=`echo "$prev" | cut -f2`
-  #echo expected result: $EXPECTED_RET
+  #echo expected result: abc${EXPECTED_RET}xx
   if [[ $EXPECTED_RET -eq $ret ]]; then
   	OUTCOME=PASSED
   else
