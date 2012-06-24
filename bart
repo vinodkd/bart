@@ -12,13 +12,13 @@ else
     function setup()
     {
       #cannot have an empty function, so putting a safe command
-      echo "setup"
+      : echo "setup"
     }
     
     function teardown()
     {
       #cannot have an empty function, so putting a safe command
-      echo "teardown"
+      : echo "teardown"
     }
 fi
 
