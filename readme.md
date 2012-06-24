@@ -5,78 +5,114 @@ bart is a simple tool that helps in testing command line applications. It happen
 
 Unline xunit test tools, however, bart doesn't try to do unit testing - its more of an acceptance test tool - if such a concept could apply to command line apps. bart doesnt actually run inside your app, but models success or failure purely on the return value of the process itself. What it __does__ do, however, is to allow executing the app under test with multiple inputs and validate that the output is as expected. Specifically, it allows modeling failure as an accepted response for invalid input.
 
-Here's a sample run to show the concept. The application under test is "echo", and we're sending it a set of numbers.
+Here's a sample run to show the concept. The application under test is `sum.sh`, and we're sending it a set of number pairs to add.
+
+      $ cat sum.sh
+      if [[ $# -ne 2 ]]; then
+        exit -1
+      fi
+      echo "input:$1 and $2"
+      let sum=$1+$2
+      echo $sum
+
+... to whom we'll provide the following inputs:
 
       $ cat inputs
-      function getinputs()
-      {
-        INPUTS=( 1 2 3 4 5 )
-      }
+      1 2
+      3 4
+      5 6
       
-      function setup()
-      {
-        echo "setup"
-      }
-      
-      function teardown()
-      {
-        echo "teardown"
-      }
-      
-      $ ./bart echo
+... by running bart thus:
+
       bart started.
-      1 2 3 4 5
       setup
-      Running: echo 1
-      1
-      execution: "echo 1", return: 0, outcome: PASSED
-      teardown
-      setup
-      Running: echo 2
-      2
-      execution: "echo 2", return: 0, outcome: PASSED
-      teardown
-      setup
-      Running: echo 3
+      Running: ./sum.sh 1 2
+      input:1 and 2
       3
-      execution: "echo 3", return: 0, outcome: PASSED
-      teardown
-      setup
-      Running: echo 4
-      4
-      execution: "echo 4", return: 0, outcome: PASSED
-      teardown
-      setup
-      Running: echo 5
-      5
       
-      Ran command: "echo 5", which returned: 0. Is this the expected result (y/n)?
+      Ran command: "./sum.sh 1 2", which returned: 0. Is this the expected result (y/n)?
       y
-      execution: "echo 5", return: 0, outcome: PASSED
+      execution of: "./sum.sh 1 2" returned: 0 and outcome: PASSED
+      teardown
+      setup
+      Running: ./sum.sh 3 4
+      input:3 and 4
+      7
+      
+      Ran command: "./sum.sh 3 4", which returned: 0. Is this the expected result (y/n)?
+      y
+      execution of: "./sum.sh 3 4" returned: 0 and outcome: PASSED
+      teardown
+      setup
+      Running: ./sum.sh 5 6
+      input:5 and 6
+      11
+      
+      Ran command: "./sum.sh 5 6", which returned: 0. Is this the expected result (y/n)?
+      y
+      execution of: "./sum.sh 5 6" returned: 0 and outcome: PASSED
       teardown
       
-      bart summary for runs of "echo" :
-      execution: "echo 1", return: 0, outcome: PASSED
-      execution: "echo 2", return: 0, outcome: PASSED
-      execution: "echo 3", return: 0, outcome: PASSED
-      execution: "echo 4", return: 0, outcome: PASSED
-      execution: "echo 5", return: 0, outcome: PASSED
+      bart summary for runs of "./sum.sh" :
+      execution of: "./sum.sh" returned: 0 and outcome: PASSED
+      execution of: "./sum.sh" returned: 0 and outcome: PASSED
+      execution of: "./sum.sh" returned: 0 and outcome: PASSED
       bart done.
       
+... the outcomes and our acceptance of the outcomes is stored in `bart_test_log.tsv`
+
       $ cat bart_test_log.tsv
-      echo 1	0
-      echo 3	0
-      echo 4	0
-      echo 2	0
-      echo 5	0
+      ./sum.sh 1 2	0
+      ./sum.sh 3 4	0
+      ./sum.sh 5 6	0
 
-As you can see:
-- the inputs are supplied via a script that bart sources in. the `inputs` file is expected to have a `getinputs()` function that sets a global `INPUTS` array with the inputs to be used with the command.
-- invoking bart with the name of the executable to be run then causes bart to run that executable with each supplied input in order.
-- as it goes through each input, bart also asks if the return value was the expected one; and records the accepted values for future use
-- it finally displays a summary of all the outcomes (which could be different from the return value itself)
+Now, adding another line to the input to test the case where one of the inputs is missed, like so:
+    
+      $ cat inputs
+      1 2
+      3 4
+      5 6
+      7
 
-Note:
+... and then running bart again would result in the following run:
+
+      $ ./bart ./sum.sh ./inputs
+      bart started.
+      setup
+      Running: ./sum.sh 1 2
+      input:1 and 2
+      3
+      execution of: "./sum.sh 1 2" returned: 0 and outcome: PASSED
+      teardown
+      setup
+      Running: ./sum.sh 3 4
+      input:3 and 4
+      7
+      execution of: "./sum.sh 3 4" returned: 0 and outcome: PASSED
+      teardown
+      setup
+      Running: ./sum.sh 5 6
+      input:5 and 6
+      11
+      execution of: "./sum.sh 5 6" returned: 0 and outcome: PASSED
+      teardown
+      setup
+      Running: ./sum.sh 7
+      
+      Ran command: "./sum.sh 7", which returned: 255. Is this the expected result (y/n)?
+      y
+      execution of: "./sum.sh 7" returned: 255 and outcome: PASSED
+      teardown
+      
+      bart summary for runs of "./sum.sh" :
+      execution of: "./sum.sh" returned: 0 and outcome: PASSED
+      execution of: "./sum.sh" returned: 0 and outcome: PASSED
+      execution of: "./sum.sh" returned: 0 and outcome: PASSED
+      execution of: "./sum.sh" returned: 255 and outcome: PASSED
+      bart done.
+
+Note that the last execution failed - as expected; and that this was stored as a "PASSED" by bart.
+Also:
 - The return values that are accepted by the user as expected outcome are stored in a file called `bart_test_log.tsv` in the current working directory
 - You can add or delete at any time to this file directly to make bart skip the interactive prompt
 - You can also delete the tsv file to make bart "forget" previous responses.
