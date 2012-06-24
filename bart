@@ -65,6 +65,8 @@ function bart_credits()
 	echo -e "\033[1;31mba\033[1;32mrt\033[0m done." 
 }
 
+BART_TEST_LOGFILE="./bart_test_log.tsv"
+
 function check_for_expected()
 {
   local executable=$1
@@ -72,11 +74,11 @@ function check_for_expected()
 
   EXPECTED_RET=
 
-  if [ ! -e expected_results.tsv ]; then
-    touch expected_results.tsv
+  if [ ! -e $BART_TEST_LOGFILE ]; then
+    touch $BART_TEST_LOGFILE
   fi
   # find previous result
-  prev=`grep "$executable $inp" expected_results.tsv`
+  prev=`grep "$executable $inp" $BART_TEST_LOGFILE`
   #echo previous result line: $prev
   if [[ ! $prev ]]; then
     return
@@ -109,7 +111,7 @@ function ask_and_add_result()
   read answer	# add -n1 to make it an instant response
   if [ $answer == "y" -o $answer == "Y" ]; then
 		#careful with the line below. There's supposed to be a tab between the command and the return value. Some editors convert tabs to spaces.
-    echo "$executable $inp	$ret" >> expected_results.tsv
+    echo "$executable $inp	$ret" >> $BART_TEST_LOGFILE
 		OUTCOME=PASSED
 		return
   fi

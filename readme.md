@@ -12,38 +12,63 @@ Here's a sample run to show the concept. The application under test is "echo", a
       {
         INPUTS=( 1 2 3 4 5 )
       }
+      
+      function setup()
+      {
+        echo "setup"
+      }
+      
+      function teardown()
+      {
+        echo "teardown"
+      }
+      
       $ ./bart echo
+      bart started.
+      1 2 3 4 5
+      setup
       Running: echo 1
       1
       execution: "echo 1", return: 0, outcome: PASSED
+      teardown
+      setup
       Running: echo 2
       2
       execution: "echo 2", return: 0, outcome: PASSED
+      teardown
+      setup
       Running: echo 3
       3
       execution: "echo 3", return: 0, outcome: PASSED
+      teardown
+      setup
       Running: echo 4
       4
       execution: "echo 4", return: 0, outcome: PASSED
+      teardown
+      setup
       Running: echo 5
       5
       
       Ran command: "echo 5", which returned: 0. Is this the expected result (y/n)?
-      n
-      execution: "echo 5", return: 0, outcome: FAILED
+      y
+      execution: "echo 5", return: 0, outcome: PASSED
+      teardown
       
       bart summary for runs of "echo" :
       execution: "echo 1", return: 0, outcome: PASSED
       execution: "echo 2", return: 0, outcome: PASSED
       execution: "echo 3", return: 0, outcome: PASSED
       execution: "echo 4", return: 0, outcome: PASSED
-      execution: "echo 5", return: 0, outcome: FAILED
+      execution: "echo 5", return: 0, outcome: PASSED
+      bart done.
       
-      $ cat expected_results.tsv
-      echo 1  0
-      echo 3  0
-      echo 4  0
-      echo 2  0
+      $ cat bart_test_log.tsv
+      echo 1	0
+      echo 3	0
+      echo 4	0
+      echo 2	0
+      echo 5	0
 
 As you can see:
 - the inputs are supplied via a script that bart sources in. the `inputs` file is expected to have a `getinputs()` function that sets a global `INPUTS` array with the inputs to be used with the command.
@@ -52,13 +77,13 @@ As you can see:
 - it finally displays a summary of all the outcomes (which could be different from the return value itself)
 
 Note:
-- The return values that are accepted by the user as expected outcome are stored in a file called `expected_values.tsv` in the current working directory
+- The return values that are accepted by the user as expected outcome are stored in a file called `bart_test_log.tsv` in the current working directory
 - You can add or delete at any time to this file directly to make bart skip the interactive prompt
 - You can also delete the tsv file to make bart "forget" previous responses.
 
 How to use bart for your own testing
 ====================================
-- download the bart script, and copy it to the directory where your app is, or where you want the expected_results.tsv to be stored.
+- download the bart script, and copy it to the directory where your app is, or where you want the bart_test_log.tsv to be stored.
   - note that bart will append to any existing tsv file, so you might want to copy bart to separate folders for each app to be tested
 - create an inputs file that creates an array of inputs that you want bart to send to the executable to be tested
 - optionally add a setup() and/or teardown() function in the same file. thsee will be called once per iteration.
