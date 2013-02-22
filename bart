@@ -5,7 +5,7 @@ SUT= 					# the system under test.
 TEST_DATA_SOURCE= 		# the source of test data
 
 BART_FIXTURE_FILE='bart_fixture.sh'
-BART_TEST_DATA_FILE='bart_inputs'
+BART_TEST_DATA_FILE=
 BART_TEST_LOGFILE="./bart_test_log.tsv"
 
 declare -a TEST_DATA=()
@@ -48,7 +48,6 @@ function validate_args(){
 			;;
 		1 )
 			SUT=$1
-			TEST_DATA_SOURCE=$BART_TEST_DATA_FILE	# use the default
 			;;
 		2 )
 			SUT=$1
@@ -78,18 +77,27 @@ function setup_fixture(){
 function set_testdata_from_source(){
 	local testdata_source=$1
 	bart_print "loading up inputs..."
-	local i=0
-	#reset test data if explicit input file provided. this avoids the array having remanant elements from the default fixture file
-	TEST_DATA=()
+	if [[ -z $testdata_source ]]; then
+		echo "SKIPPED. No inputs specified."
+		return
+	fi
+	if [[ -e $testdata_source ]]; then
+		local i=0
+		#reset test data if explicit input file provided. this avoids the array having remanant elements from the default fixture file
+		TEST_DATA=()
 
-	while read line; do
-		if [[ -n "$line" ]]; then
-			TEST_DATA[$i]="$line"
-			let "i = $i + 1"
-		fi
-	done < $testdata_source
-	echo "done. Using file: $testdata_source"
-	bart_println "test data loaded from input file (overrides data from fixture file): ${#TEST_DATA[*]} rows"
+		while read line; do
+			if [[ -n "$line" ]]; then
+				TEST_DATA[$i]="$line"
+				let "i = $i + 1"
+			fi
+		done < $testdata_source
+		echo "done. Using file: $testdata_source"
+		bart_println "test data loaded from input file (overrides data from fixture file): ${#TEST_DATA[*]} rows"
+	else
+		echo "FAILED. $testdata_source could not be found."
+		exit -3
+	fi
 }
 
 function execute_tests(){
@@ -174,7 +182,7 @@ function ask_and_add_result()
 		bart_println "\tran command: \"$cmd\", which failed. Do you want to continue with the next run(c) or quit(q)?"
 	 	read ans_proceed	# add -n1 to make it an instant response
 		if [ $ans_proceed != "c" -o $ans_proceed != "C" ]; then
-			exit 3	# TODO: fix this to skip this iteration, not the whole process.
+			exit -4	# TODO: fix this to skip this iteration, not the whole process.
 		fi
 	fi
 	echo
