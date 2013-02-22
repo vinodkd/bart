@@ -106,7 +106,7 @@ Also:
 
 How to use bart for your own testing
 ====================================
-- "Install" bart by cloning the repo somewhere on your machine. Set `$BART_HOME` to that location.
+- "Install" bart by cloning the repo somewhere on your machine. Set `$BART_HOME` to that location. Add `bart` to your path if you want.
 - In the directory containing the executable you want to test, 
       - Create an inputs file that has one line per for each set of inputs you'd like to send to the app under test.
       - Optionally add a `bart_fixture.sh` and write a setup() and/or teardown() function in it. these will be called once per iteration. This file can also have a set_testdata() function that dynamically generates test data. See the default fixture file `bart_fixture.sh` to get started.
