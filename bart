@@ -11,30 +11,39 @@ BART_TEST_LOGFILE="./bart_test_log.tsv"
 declare -a TEST_DATA=()
 
 function main(){
-	validate_env
-	validate_args $*
-	setup_fixture	# this could also setup test data
-	set_testdata_from_source $TEST_DATA_SOURCE	#...which can be overridden here.
-	execute_tests
-	report_results
+	bart_banner
+		validate_env
+		validate_args $*
+		setup_fixture	# this could also setup test data
+		set_testdata_from_source $TEST_DATA_SOURCE	#...which can be overridden here.
+		execute_tests
+		report_results
+	bart_credits
 }
 
 function validate_env(){
+	bart_print "validating environment..."
 	# we could get smarty pants about finding where bart resides, but it seems easier to just setup a var.
 	if [[ $BART_HOME == "" ]]; then
 		echo "Please set \$BART_HOME to bart's install location and rerun."
+		bart_credits
 		exit -1
+	else
+		echo "done."
 	fi
 }
 
 function validate_args(){
+	bart_print "validating args..."
 	case $# in
 		0 )
-			echo "bart: the bash application rapid tester."
-			echo "Usage: bart command [test_data]"
-			echo "if test_inputs.file is omitted, you have two options:"
-			echo "  1. the current dir must have a bart_test_data.txt file with inputs (one execution's args per line)"
-			echo "  2. bart_fixture.sh must have a getinputs() defined."
+			echo "FAILED. bart needs at least a command to work with."
+			echo
+			echo "Usage: bart command [inputs]"
+			echo "If test_data is omitted, you have two options:"
+			echo "	1. the current dir must have a file named \"bart_inputs\" with inputs (one execution's args per line)"
+			echo "	2. bart_fixture.sh must have a set_testdata() defined."
+			bart_credits
 			exit -2
 			;;
 		1 )
@@ -50,40 +59,47 @@ function validate_args(){
 			TEST_DATA_SOURCE=$2
 			;;
 	esac
+	echo "done."
 }
 
 function setup_fixture(){
+	bart_print "loading up fixture..."
 	if [[ -e $BART_FIXTURE_FILE ]]; then
-		echo "reading local fixture file"
+		echo "done. Using local file : $BART_FIXTURE_FILE"
 		source ./$BART_FIXTURE_FILE
 	else
-		echo "reading default fixture file"
+		echo "done. Using default file : $BART_HOME/$BART_FIXTURE_FILE"
 		source $BART_HOME/$BART_FIXTURE_FILE
 	fi
 	set_testdata
-	echo "Loaded ${#TEST_DATA[*]} rows of test data"
+	bart_println "test data loaded from fixture file: ${#TEST_DATA[*]} rows"
 }
 
 function set_testdata_from_source(){
 	local testdata_source=$1
+	bart_print "loading up inputs..."
 	local i=0
+	#reset test data if explicit input file provided. this avoids the array having remanant elements from the default fixture file
+	TEST_DATA=()
+
 	while read line; do
 		if [[ -n "$line" ]]; then
 			TEST_DATA[$i]="$line"
 			let "i = $i + 1"
 		fi
 	done < $testdata_source
+	echo "done. Using file: $testdata_source"
+	bart_println "test data loaded from input file (overrides data from fixture file): ${#TEST_DATA[*]} rows"
 }
 
 function execute_tests(){
-	echo Size is: ${#TEST_DATA[*]}
-	bart_banner
+	#echo Size is: ${#TEST_DATA[*]}
 	for inp in "${TEST_DATA[@]}"; do
 		setup
 		
 		OUTCOME=
     	cmd="$SUT $inp"
-    	echo Running: "$cmd"
+    	bart_println "running: $cmd"
 		eval "$cmd"
 		ret=$?
 
@@ -94,7 +110,7 @@ function execute_tests(){
 		#echo outcome:$OUTCOME
 		# outcome is set by either check_for_expected or ask_and_add_result
 		print_outcome "$cmd" $ret $OUTCOME
-		store_for_summary "$SUT" $ret $OUTCOME
+		store_for_summary "$cmd" $ret $OUTCOME
 
     	teardown
     done
@@ -102,24 +118,31 @@ function execute_tests(){
 
 function report_results(){
   print_summary $SUT
-  bart_credits
+}
+
+function bart_println(){
+	echo -e "\033[1;31mba\033[1;32mrt\033[0m : $1"
+}
+
+function bart_print(){
+	echo -ne "\033[1;31mba\033[1;32mrt\033[0m : $1"
 }
 
 function bart_banner()
 {
-	echo -e "\033[1;31mba\033[1;32mrt\033[0m started." 
+	bart_println "the bash application rapid tester." 
 }
 
 function bart_credits()
 {
-	echo -e "\033[1;31mba\033[1;32mrt\033[0m done." 
+	bart_println "done." 
 }
 
 
 function check_for_expected()
 {
 	local cmd="$1"
-	echo cfe:$cmd
+	#echo cfe:$cmd
 
 	EXPECTED_RET=
 
@@ -128,7 +151,7 @@ function check_for_expected()
 	fi
 	# find previous result
 	prev=$( grep "$cmd" $BART_TEST_LOGFILE )
-	echo previous result line: $prev
+	#echo previous result line: $prev
 	if [[ ! $prev ]]; then
 		return
 	fi
@@ -148,14 +171,14 @@ function ask_and_add_result()
 	local ret=$2
 
 	if [[ $ret -eq 127 ]]; then
-		echo "Ran command: \"$cmd\", which failed. Do you want to continue with the next run(c) or quit(q)?"
+		bart_println "\tran command: \"$cmd\", which failed. Do you want to continue with the next run(c) or quit(q)?"
 	 	read ans_proceed	# add -n1 to make it an instant response
 		if [ $ans_proceed != "c" -o $ans_proceed != "C" ]; then
 			exit 3	# TODO: fix this to skip this iteration, not the whole process.
 		fi
 	fi
 	echo
-	echo "Ran command: \"$cmd\", which returned: $ret. Is this the expected result (y/n)?"
+	bart_println "\tran command: \"$cmd\", which returned: $ret. Is this the expected result (y/n)?"
 	read answer	# add -n1 to make it an instant response
 	if [ $answer == "y" -o $answer == "Y" ]; then
 		#careful with the line below. There's supposed to be a tab between the command and the return value. Some editors convert tabs to spaces.
@@ -185,7 +208,7 @@ function print_outcome()
 			outcome_str="\033[0;31mFAILED\033[0m"
 			;;
 	esac
-	echo -e "execution of: \"$cmd\" returned: $ret and outcome: $outcome_str"
+	bart_println "\texecution of: \"$cmd\" returned: $ret and outcome: $outcome_str"
 }
 
 function store_for_summary()
@@ -200,12 +223,12 @@ function print_summary()
 	local executable=$1
 
 	echo
-	echo -e "\033[1;31mba\033[1;32mrt\033[0m summary for runs of \"$executable\" :"
+	bart_println "summary for runs of \"$executable\" :"
 	count=${#EXECUTIONS[@]}
 	i=0
 	while [ $i -lt $count ]
 	do
-		print_outcome ${EXECUTIONS[$i]} ${RETURNVALUES[$i]} ${OUTCOMES[$i]}
+		print_outcome "${EXECUTIONS[$i]}" "${RETURNVALUES[$i]}" "${OUTCOMES[$i]}"
 		let "i = $i + 1"
 	done
 }
