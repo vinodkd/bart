@@ -15,7 +15,7 @@ Here's a sample run to show the concept. The application under test is `sum.sh`,
       let sum=$1+$2
       echo $sum
 
-... to whom we'll provide the following inputs:
+... to which we'll provide the following inputs:
 
       $ cat inputs
       1 2
@@ -54,7 +54,7 @@ Here's a sample run to show the concept. The application under test is `sum.sh`,
       execution of: "./sum.sh" returned: 0 and outcome: PASSED
       bart done.
       
-... the outcomes and our acceptance of the outcomes is stored in `bart_test_log.tsv`
+... the outcomes and our acceptance of the outcomes is stored in `./bart_test_log.tsv`
 
       $ cat bart_test_log.tsv
       ./sum.sh 1 2	0
@@ -106,14 +106,16 @@ Also:
 
 How to use bart for your own testing
 ====================================
-- download the bart script, and copy it to the directory where your app is, or where you want the `bart_test_log.tsv` to be stored.
-  - note that bart will append to any existing tsv file, so you might want to copy bart to separate folders for each app to be tested
-- create an inputs file that has one line per for each set of inputs you'd like to send to the app under test.
-- optionally add a `bart_fixture.sh` and write a setup() and/or teardown() function in it. these will be called once per iteration.
-- call bart with the executable as a param
+- "Install" bart by cloning the repo somewhere on your machine. Set `$BART_HOME` to that location.
+- In the directory containing the executable you want to test, 
+      - Create an inputs file that has one line per for each set of inputs you'd like to send to the app under test.
+      - Optionally add a `bart_fixture.sh` and write a setup() and/or teardown() function in it. these will be called once per iteration. This file can also have a set_testdata() function that dynamically generates test data. See the default fixture file `bart_fixture.sh` to get started.
+      - call bart with the executable as a param
+- Note that bart will append to any existing tsv file.
 
 Next steps
 ==========
+- Implement the datafile option
 - add a -y switch to bart to treat all prompt-able points as a yes answer automatically
 - add a -n switch to bart to treat all prompt-able points as a no answer automatically
 - allow comment lines in the input file
