@@ -1,73 +1,100 @@
-#!/usr/bin/env bash
+#! /usr/bin/env bash
+# bart
 
-# bart: the Bash-based Application Rapid Tester.
-# a simple test harness for command line apps
+SUT= 					# the system under test.
+TEST_DATA_SOURCE= 		# the source of test data
 
-set -u # defensive coding
+BART_FIXTURE_FILE='bart_fixture.sh'
+#BART_TEST_DATA_FILE='bart_test_data.txt'
+BART_TEST_LOGFILE="./bart_test_log.tsv"
 
-set -e # error out if fixture code has syntax errors.
-if [ -e 'bart_fixture.sh' ]; then
-  source bart_fixture.sh
-else
-    function setup()
-    {
-      #cannot have an empty function, so putting a safe command
-      : echo "setup"
-    }
-    
-    function teardown()
-    {
-      #cannot have an empty function, so putting a safe command
-      : echo "teardown"
-    }
-fi
+declare -a TEST_DATA=()
 
-set +e # turn error checking off so test runs' returns can be read
+function main(){
+	validate_env
+	validate_args $*
+	setup_fixture	# this could also setup test data
+	set_testdata_from_source $TEST_DATA_SOURCE	#...which can be overridden here.
+	execute_tests
+	report_results
+}
 
-function main()
-{
-		if [[ $# -ne 2 ]]; then
-			echo "Usage: bart command inputfile"
-      exit 1
+function validate_env(){
+	# we could get smarty pants about finding where bart resides, but it seems easier to just setup a var.
+	if [[ $BART_HOME == "" ]]; then
+		echo "Please set \$BART_HOME to bart's install location and rerun."
+		exit -1
+	fi
+}
+
+function validate_args(){
+	case $# in
+		0 )
+			echo "bart: the bash application rapid tester."
+			echo "Usage: bart command [test_data]"
+			echo "if test_inputs.file is omitted, you have two options:"
+			echo "  1. the current dir must have a bart_test_data.txt file with inputs (one execution's args per line)"
+			echo "  2. bart_fixture.sh must have a getinputs() defined."
+			exit -2
+			;;
+		1 )
+			SUT=$1
+			;;
+		2 )
+			SUT=$1
+			TEST_DATA_SOURCE=$2
+			;;
+		* )
+			SUT=$1
+			TEST_DATA_SOURCE=$2
+			;;
+	esac
+}
+
+function setup_fixture(){
+	if [[ -e $BART_FIXTURE_FILE ]]; then
+		echo "reading local fixture file"
+		source ./$BART_FIXTURE_FILE
+	else
+		echo "reading default fixture file"
+		source $BART_HOME/$BART_FIXTURE_FILE
+	fi
+	set_testdata
+	echo "Loaded ${#TEST_DATA[*]} rows of test data"
+}
+
+function set_testdata_from_source(){
+	local testdata_source=$1
+}
+
+function execute_tests(){
+	echo Size is: ${#TEST_DATA[*]}
+	bart_banner
+	for inp in "${TEST_DATA[@]}"; do
+		setup
+		
+		OUTCOME=
+    	cmd="$SUT $inp"
+    	echo Running: "$cmd"
+		eval "$cmd"
+		ret=$?
+
+		check_for_expected "$cmd"
+		if [[ ! $OUTCOME ]]; then
+			ask_and_add_result "$cmd" $ret
 		fi
-    local executable=$1
-    local inputfile=$2
+		#echo outcome:$OUTCOME
+		# outcome is set by either check_for_expected or ask_and_add_result
+		print_outcome "$cmd" $ret $OUTCOME
+		store_for_summary "$SUT" $ret $OUTCOME
 
-		if [ ! -e "$inputfile" ]; then
-			echo $inputfile not found. exiting
-      exit 1
-		fi
-
-    bart_banner
-
-    #newline code from http://gslsrc.net/l007_loops_in_bash.html & http://superuser.com/questions/284187/bash-iterating-over-lines-in-a-variable
-    orig_IFS="$IFS"
-    IFS=$'\n'
-    
-		for inp in `cat $inputfile`; do
-			setup
-			
-			OUTCOME=
-      cmd="$executable $inp"
-      echo Running: $cmd
-			eval $cmd
-      ret=$?
-      
-      check_for_expected $cmd
-      if [[ ! $OUTCOME ]]; then
-        ask_and_add_result $cmd $ret
-      fi
-			#echo outcome:$OUTCOME
-			# outcome is set by either check_for_expected or ask_and_add_result
-			print_outcome $cmd $ret $OUTCOME
-      store_for_summary $executable $ret $OUTCOME
-			
-			teardown
+    	teardown
     done
-    IFS=$orig_IFS
-    
-    print_summary $executable
-    bart_credits
+}
+
+function report_results(){
+  print_summary $SUT
+  bart_credits
 }
 
 function bart_banner()
@@ -80,54 +107,54 @@ function bart_credits()
 	echo -e "\033[1;31mba\033[1;32mrt\033[0m done." 
 }
 
-BART_TEST_LOGFILE="./bart_test_log.tsv"
 
 function check_for_expected()
 {
-  local cmd=$1
+	local cmd="$1"
+	echo cfe:$cmd
 
-  EXPECTED_RET=
+	EXPECTED_RET=
 
-  if [ ! -e $BART_TEST_LOGFILE ]; then
-    touch $BART_TEST_LOGFILE
-  fi
-  # find previous result
-  prev=`grep $cmd $BART_TEST_LOGFILE`
-  #echo previous result line: $prev
-  if [[ ! $prev ]]; then
-    return
-  fi
-  
-  EXPECTED_RET=`echo "$prev" | cut -f2`
-  #echo expected result: ${EXPECTED_RET}
-  if [[ $EXPECTED_RET -eq $ret ]]; then
-  	OUTCOME=PASSED
-  else
-  	OUTCOME=FAILED
-  fi
+	if [ ! -e $BART_TEST_LOGFILE ]; then
+		touch $BART_TEST_LOGFILE
+	fi
+	# find previous result
+	prev=$( grep "$cmd" $BART_TEST_LOGFILE )
+	#echo previous result line: $prev
+	if [[ ! $prev ]]; then
+		return
+	fi
+
+	EXPECTED_RET=`echo "$prev" | cut -f2`
+	#echo expected result: ${EXPECTED_RET}
+	if [[ $EXPECTED_RET -eq $ret ]]; then
+		OUTCOME=PASSED
+	else
+		OUTCOME=FAILED
+	fi
 }
 
 function ask_and_add_result()
 {
 	local cmd=$1
-  local ret=$2
+	local ret=$2
 
 	if [[ $ret -eq 127 ]]; then
 		echo "Ran command: \"$cmd\", which failed. Do you want to continue with the next run(c) or quit(q)?"
-	  read ans_proceed	# add -n1 to make it an instant response
-	  if [ $ans_proceed != "c" -o $ans_proceed != "C" ]; then
+	 	read ans_proceed	# add -n1 to make it an instant response
+		if [ $ans_proceed != "c" -o $ans_proceed != "C" ]; then
 			exit 3	# TODO: fix this to skip this iteration, not the whole process.
 		fi
 	fi
 	echo
-  echo "Ran command: \"$cmd\", which returned: $ret. Is this the expected result (y/n)?"
-  read answer	# add -n1 to make it an instant response
-  if [ $answer == "y" -o $answer == "Y" ]; then
+	echo "Ran command: \"$cmd\", which returned: $ret. Is this the expected result (y/n)?"
+	read answer	# add -n1 to make it an instant response
+	if [ $answer == "y" -o $answer == "Y" ]; then
 		#careful with the line below. There's supposed to be a tab between the command and the return value. Some editors convert tabs to spaces.
-    echo "$cmd	$ret" >> $BART_TEST_LOGFILE
+		echo "$cmd	$ret" >> $BART_TEST_LOGFILE
 		OUTCOME=PASSED
 		return
-  fi
+	fi
 	OUTCOME=FAILED
 }
 
@@ -138,41 +165,41 @@ OUTCOMES=(  )
 
 function print_outcome()
 {
-    local cmd="$1"
-		local ret=$2
-    local outcome=$3
+	local cmd="$1"
+	local ret=$2
+	local outcome=$3
 
-		case $outcome in
-			PASSED )
-				outcome_str="\033[0;32mPASSED\033[0m"
-				;;
-			FAILED )
-				outcome_str="\033[0;31mFAILED\033[0m"
-				;;
-		esac
-    echo -e "execution of: \"$cmd\" returned: $ret and outcome: $outcome_str"
+	case $outcome in
+		PASSED )
+			outcome_str="\033[0;32mPASSED\033[0m"
+			;;
+		FAILED )
+			outcome_str="\033[0;31mFAILED\033[0m"
+			;;
+	esac
+	echo -e "execution of: \"$cmd\" returned: $ret and outcome: $outcome_str"
 }
 
 function store_for_summary()
 {
-  EXECUTIONS[${#EXECUTIONS[@]}]=$1
+  EXECUTIONS[${#EXECUTIONS[@]}]="$1"
   RETURNVALUES[${#RETURNVALUES[@]}]="$2"
   OUTCOMES[${#OUTCOMES[@]}]="$3"
-
 }
 
 function print_summary()
 {
 	local executable=$1
-	
+
 	echo
 	echo -e "\033[1;31mba\033[1;32mrt\033[0m summary for runs of \"$executable\" :"
-  count=${#EXECUTIONS[@]}
-  i=0
-  while [ $i -lt $count ]
-  do
-      print_outcome ${EXECUTIONS[$i]} ${RETURNVALUES[$i]} ${OUTCOMES[$i]}
-      let "i = $i + 1"
-  done
+	count=${#EXECUTIONS[@]}
+	i=0
+	while [ $i -lt $count ]
+	do
+		print_outcome ${EXECUTIONS[$i]} ${RETURNVALUES[$i]} ${OUTCOMES[$i]}
+		let "i = $i + 1"
+	done
 }
+
 main $*
