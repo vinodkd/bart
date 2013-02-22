@@ -1,4 +1,4 @@
 ISSUES
 ======
-1: 22/feb/2013: lack of inputs file causes bart to load up a default file and overwrite inputs from fixture file: OPEN
+1: 22/feb/2013: lack of inputs file causes bart to load up a default file and overwrite inputs from fixture file: CLOSED
 
