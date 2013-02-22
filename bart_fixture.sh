@@ -1,7 +1,7 @@
 #bart_fixture.sh
 
 function setup(){
-	echo "Replace with your setup routine"
+	echo "Replace with your setup routine" > /dev/null
 }
 
 function set_testdata(){
@@ -11,5 +11,5 @@ function set_testdata(){
 }
 
 function teardown(){
-	echo "Replace with your teardown routine"
+	echo "Replace with your teardown routine" > /dev/null
 }
