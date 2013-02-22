@@ -119,6 +119,7 @@ Next steps
 - add a -y switch to bart to treat all prompt-able points as a yes answer automatically
 - add a -n switch to bart to treat all prompt-able points as a no answer automatically
 - allow comment lines in the input file
-- remove debug prints
-- remove default echos from bart_fixture.sh
-- move test files to a new `test` directory
+- remove debug prints: DONE
+- remove default echos from bart_fixture.sh: DONE
+- move test files to a new `test` directory: DONE
+- test out the setup()/teardown() feature
